@@ -1,0 +1,5 @@
+LIBRARY "Custom Picture Totals"
+
+EXPORTS
+TygerFrameworkPluginInitialize
+TygerFrameworkPluginRequiredVersion
