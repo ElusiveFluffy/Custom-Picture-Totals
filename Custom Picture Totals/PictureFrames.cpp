@@ -174,8 +174,8 @@ bool PictureFrames::HookShutdown()
         return false;
     }
 
-    //Hook GetKeyboardState
-    MH_STATUS minHookStatus = MH_CreateHook(reinterpret_cast<LPVOID*>(TyMemoryValues::TyBaseAddress + 0x19DAB0), &ShutDown, reinterpret_cast<LPVOID*>(&Original_TyShutdown));
+    //Hook Ty Shutdown Function
+    MH_STATUS minHookStatus = MH_CreateHook(TyMemoryValues::GetTyShutdownFunc(), &ShutDown, reinterpret_cast<LPVOID*>(&Original_TyShutdown));
     if (minHookStatus != MH_OK) {
         std::string error = MH_StatusToString(minHookStatus);
         API::LogPluginMessage("Failed to Create the Ty Shutdown Function Hook, With the Error: " + error, Error);
