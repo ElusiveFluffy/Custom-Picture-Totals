@@ -6,6 +6,8 @@
 
 #include <string>
 #include <sstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 typedef int32_t(WINAPI* TyShutdown_t) ();
 TyShutdown_t Original_TyShutdown;
@@ -44,23 +46,15 @@ void PictureFrames::CheckIfGameFinishInit()
 
 void PictureFrames::SetPictureIDs()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
-
-    if (pictureIDs.is_open()) {
-        std::string line;
-        std::getline(pictureIDs, line);
-        pictureIDs.close();
-
-        if (line.find("Z1:") == std::string::npos)
-            SimplePictureLoading();
-        else
-            AdvancedPictureLoading();
-    }
+    if (fs::exists("Plugins/Custom Picture IDs Simple.txt"))
+        SimplePictureLoading();
+    else
+        AdvancedPictureLoading();
 }
 
 void PictureFrames::SimplePictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    std::ifstream pictureIDs("Plugins/Custom Picture IDs Simple.txt");
     std::string level;
     std::string numOfPictures;
 
@@ -108,7 +102,7 @@ void PictureFrames::SimplePictureLoading()
 
 void PictureFrames::AdvancedPictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    std::ifstream pictureIDs("Plugins/Custom Picture IDs Advanced.txt");
     std::string level;
     std::string line;
     int countForLevel = 0;
