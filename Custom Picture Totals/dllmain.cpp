@@ -32,7 +32,7 @@ EXTERN_C void TygerFrameworkPluginRequiredVersion(TygerFrameworkPluginVersion* v
 
 EXTERN_C bool TygerFrameworkPluginInitialize(TygerFrameworkPluginInitializeParam* param) {
 
-    if (!fs::exists("Plugins/Custom Picture IDs Simple.txt") && !fs::exists("Plugins/Custom Picture IDs Advanced.txt"))
+    if (!fs::exists("Plugins/Custom Picture IDs.txt"))
     {
         param->initErrorMessage = "Custom Picture IDs txt file is missing";
         return false;

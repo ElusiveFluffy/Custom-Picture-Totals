@@ -6,8 +6,6 @@
 
 #include <string>
 #include <sstream>
-#include <filesystem>
-namespace fs = std::filesystem;
 
 typedef int32_t(WINAPI* TyShutdown_t) ();
 TyShutdown_t Original_TyShutdown;
@@ -23,6 +21,7 @@ int32_t WINAPI ShutDown() {
         *(startPointer + 2) = pointerValue[1];
     }
 
+    //Run the game's shutdom function
     return Original_TyShutdown();
 }
 
@@ -37,6 +36,7 @@ void PictureFrames::CheckIfGameFinishInit()
 
     if (!HookShutdown())
     {
+        //Return early if the hook fails
         API::LogPluginMessage("Failed to Hook the Ty Shutdown Function", Error);
         return;
     }
@@ -46,20 +46,30 @@ void PictureFrames::CheckIfGameFinishInit()
 
 void PictureFrames::SetPictureIDs()
 {
-    if (fs::exists("Plugins/Custom Picture IDs Simple.txt"))
-        SimplePictureLoading();
-    else
-        AdvancedPictureLoading();
+    //Temporarily open it here to check the first line to see what method is used
+    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    if (pictureIDs.is_open()) {
+        std::string line;
+        std::getline(pictureIDs, line);
+        pictureIDs.close();
+
+        //Chose the method to load the IDs
+        if (line != "Z1:")
+            SimplePictureLoading();
+        else
+            AdvancedPictureLoading();
+    }
 }
 
 void PictureFrames::SimplePictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs Simple.txt");
+    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
     std::string level;
     std::string numOfPictures;
 
     int count = 0;
     int* picturePointer = TyMemoryValues::GetStartPicturePointer();
+    //Loop through each line, splitting it at the = sign
     while (std::getline(pictureIDs, level, '=') &&
         std::getline(pictureIDs, numOfPictures)) {
 
@@ -102,13 +112,14 @@ void PictureFrames::SimplePictureLoading()
 
 void PictureFrames::AdvancedPictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs Advanced.txt");
+    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
     std::string level;
     std::string line;
     int countForLevel = 0;
 
     int count = 0;
     int* picturePointer = TyMemoryValues::GetStartPicturePointer();
+    //Loop through all the lines
     while (std::getline(pictureIDs, line)) {
         //Check if its a level line
         if (line.find(":") != std::string::npos) {
