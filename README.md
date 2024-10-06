@@ -22,3 +22,10 @@ The advanced way allows you to specify all the IDs for each level manually so yo
 If you want a level to have `no picture frames` you can just have the a `-` for the line with the IDs
 
 # Make sure `not to delete` any of the level ID lines in the txt file as it will break the plugin, since it just iterates though all the levels in the game's memory in order, and moving the level IDs around in the txt file doesn't change the order
+
+# Building from Source
+I recommend installing vcpkg to easily be able to install the needed package.  
+Just enter this in command prompt to install the minhook package and thats about it to be able to build it
+```
+vcpkg install minhook --triplet x86-windows-static
+```
