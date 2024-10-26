@@ -27,5 +27,5 @@ If you want a level to have `no picture frames` you can just have the a `-` for 
 I recommend installing vcpkg to easily be able to install the needed package.  
 Just enter this in command prompt to install the minhook package and thats about it to be able to build it
 ```
-vcpkg install minhook --triplet x86-windows-static
+vcpkg install minhook --triplet x86-windows-static-md
 ```
