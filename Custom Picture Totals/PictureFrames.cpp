@@ -2,15 +2,11 @@
 #include "PictureFrames.h"
 #include "TyMemoryValues.h"
 #include "TygerFrameworkAPI.hpp"
-#include "MinHook.h"
 
 #include <string>
 #include <sstream>
 
-typedef int32_t(WINAPI* TyShutdown_t) ();
-TyShutdown_t Original_TyShutdown;
-
-int32_t WINAPI ShutDown() {
+void PictureFrames::Shutdown() {
 
     API::LogPluginMessage("Deinitializing");
     API::LogPluginMessage("Resetting Picture Frame Pointers to Avoid a Crash");
@@ -20,42 +16,12 @@ int32_t WINAPI ShutDown() {
         *(startPointer + 1) = pointerValue[1];
         *(startPointer + 2) = pointerValue[1];
     }
-
-    //Run the game's shutdom function
-    return Original_TyShutdown();
-}
-
-void PictureFrames::CheckIfGameFinishInit()
-{
-    TyMemoryValues::TyBaseAddress = (DWORD)API::Get()->param()->TyHModule;
-    API::LogPluginMessage("Got Ty Base Address");
-
-    std::vector<TygerFrameworkImGuiParam> TygerFrameworkImguiElements = { {CollapsingHeader, "Assigned Totals Picture IDs"},
-                                                                          {Text, "Waiting for the Game to Initialize"} };
-    API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
-
-    //Just waiting for the game to startup, values below 5 are all uses before fully initialized
-    while (TyMemoryValues::GetTyGameState() < 5) {
-        Sleep(100);
-    }
-
-    if (!HookShutdown())
-    {
-        //Return early if the hook fails
-        API::LogPluginMessage("Failed to Hook the Ty Shutdown Function", Error);
-        //Update the TygerFramework ImGui menu text
-        TygerFrameworkImguiElements[1] = {TextWrapped, "Error Failed to Hook the Ty Shutdown Function to Avoid a Crash When Closing the Game (Check the Log for More Details)"};
-        API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
-        return;
-    }
-
-    SetPictureIDs();
 }
 
 void PictureFrames::SetPictureIDs()
 {
     //Temporarily open it here to check the first line to see what method is used
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
     if (pictureIDs.is_open()) {
         std::string line;
         std::getline(pictureIDs, line);
@@ -71,7 +37,7 @@ void PictureFrames::SetPictureIDs()
 
 void PictureFrames::SimplePictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
     std::string level;
     std::string numOfPictures;
 
@@ -118,7 +84,6 @@ void PictureFrames::SimplePictureLoading()
         }
         else
         {
-            TygerFrameworkImguiElements.push_back({ TextWrapped, level + ":   -" });
             API::LogPluginMessage(level + ": 0");
             //Set everything to 0 if a level is set to have no picture frames
             *picturePointer = 0;
@@ -136,7 +101,7 @@ void PictureFrames::SimplePictureLoading()
 
 void PictureFrames::AdvancedPictureLoading()
 {
-    std::ifstream pictureIDs("Plugins/Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
     std::string level;
     std::string line;
     int countForLevel = 0;
@@ -188,7 +153,9 @@ void PictureFrames::AdvancedPictureLoading()
         }
         else
         {
-            TygerFrameworkImguiElements.push_back({ TextWrapped, line });
+            //Remove the level and same line elements
+            TygerFrameworkImguiElements.pop_back();
+            TygerFrameworkImguiElements.pop_back();
             API::LogPluginMessage(level + " 0");
             //Set everything to 0 if a level is set to have no picture frames
             *picturePointer = 0;
@@ -199,36 +166,7 @@ void PictureFrames::AdvancedPictureLoading()
         picturePointer = picturePointer + 3;
     }
     //Insert the total amount at the top, just after the collapsing header element
-    TygerFrameworkImguiElements.insert(TygerFrameworkImguiElements.begin() + 1, {Text, "Total Picture Frames: " + std::to_string(count)});
+    TygerFrameworkImguiElements.insert(TygerFrameworkImguiElements.begin() + 1, { Text, "Total Picture Frames: " + std::to_string(count) });
     API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
     API::LogPluginMessage("Total Picture Frames: " + std::to_string(count));
-}
-
-bool PictureFrames::HookShutdown()
-{
-    MH_STATUS minhookStatus = MH_Initialize();
-    if (minhookStatus != MH_OK) {
-        std::string error = MH_StatusToString(minhookStatus);
-        API::LogPluginMessage("Failed to Initialize Minhook, With the Error: " + error, Error);
-        return false;
-    }
-
-    //Hook Ty Shutdown Function
-    MH_STATUS minHookStatus = MH_CreateHook(TyMemoryValues::GetTyShutdownFunc(), &ShutDown, reinterpret_cast<LPVOID*>(&Original_TyShutdown));
-    if (minHookStatus != MH_OK) {
-        std::string error = MH_StatusToString(minHookStatus);
-        API::LogPluginMessage("Failed to Create the Ty Shutdown Function Hook, With the Error: " + error, Error);
-        return false;
-    }
-
-    //Enable both hooks
-    minHookStatus = MH_EnableHook(MH_ALL_HOOKS);
-    if (minHookStatus != MH_OK) {
-        std::string error = MH_StatusToString(minHookStatus);
-        API::LogPluginMessage("Failed to Hook Ty Shutdown Function, With the Error: " + error, Error);
-        return false;
-    }
-
-    API::LogPluginMessage("Sucessfully Hooked the Ty Shutdown Function");
-    return true;
 }

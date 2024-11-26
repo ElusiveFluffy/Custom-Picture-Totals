@@ -8,6 +8,13 @@ public:
 	//If you want a different name, can change the plugin name in DllMain
 	static inline std::string PluginName = "Plugin";
 
+	//Returns true if initialized
+	static bool IsInitialized() {
+		return mInstance != nullptr;
+	}
+
+	//Call this when the TygerFramework Plugin Initialize export function gets called, 
+	//and before you call any other API functions.
 	static auto& Initialize(const TygerFrameworkPluginInitializeParam* param) {
 		if (param == nullptr) {
 			throw std::runtime_error("param is null");
@@ -49,7 +56,7 @@ public:
 		return API::Get()->param()->functions->GetTyWindowHandle();
 	}
 
-	//Gets if TygerFramework is drawing the GUI. Only use for imgui if you have a special use case
+	//Checks if TygerFramework is drawing the GUI
 	static bool DrawingGUI() {
 		return API::Get()->param()->functions->DrawingGUI();
 	}
@@ -65,6 +72,11 @@ public:
 		return Get()->param()->functions->CurrentTyGame();
 	}
 
+	//Gets the current plugin directory (will be different for debug/release builds of TygerFramework)
+	static std::filesystem::path GetPluginDirectory() {
+		return Get()->param()->functions->GetPluginDir();
+	}
+
 	//Writes a message to the console and the log file. Default log level is info
 	static void LogPluginMessage(std::string message, LogLevel logLevel = Info) {
 		Get()->param()->functions->LogPluginMessage("[" + PluginName + "] " + message, logLevel);
@@ -75,17 +87,35 @@ public:
 		Get()->param()->functions->SetImGuiFont(imguiFont);
 	}
 
-	//Sets all the elements for drawing elements from the plugin in the TygerFramework window
+	//Sets the elements from the plugin that will be drawn below the plugin section in the TygerFramework ImGui window.
 	//Overwrites the old value if its called again
 	static void SetTygerFrameworkImGuiElements(std::vector<TygerFrameworkImGuiParam> elements) {
 		Get()->param()->functions->SetTyFImGuiElements(PluginName, elements);
+	}
+
+	//Sets all the flags
+	static bool SetTyInputState(TyInputsFlags flags) {
+		return Get()->param()->functions->SetTyInputState(PluginName, flags);
+	}
+
+	//More easily set or unset a flag(s) in some cases
+	static bool SetTyInputFlag(TyInputsFlags flag, bool enableFlag) {
+		if (enableFlag)
+			return Get()->param()->functions->SetTyInputState(PluginName, (GetTyInputState() | flag));
+		else
+			return Get()->param()->functions->SetTyInputState(PluginName, (GetTyInputState() & ~flag));
+	}
+
+	//Get the input state of the game set by this plugin (the plugin state could still be blocked by another plugin though)
+	static TyInputsFlags GetTyInputState() {
+		return Get()->param()->functions->GetTyInputState(PluginName);
 	}
 
 	//--------------------------
 	//Event subscriber functions
 	//--------------------------
 
-	static bool AddDrawPluginUI(DrawUIFunc func) {
+	static bool AddDrawPluginUI(VoidFunc func) {
 		return Get()->param()->functions->AddDrawPluginUI(PluginName, func);
 	}
 
@@ -99,6 +129,14 @@ public:
 
 	static bool AddTickBeforeGame(TickBeforeGameFunc func) {
 		return Get()->param()->functions->AddTickBeforeGame(PluginName, func);
+	}
+
+	static bool AddOnTyInitialized(VoidFunc func) {
+		return Get()->param()->functions->AddOnTyInitialized(PluginName, func);
+	}
+
+	static bool AddOnTyBeginShutdown(VoidFunc func) {
+		return Get()->param()->functions->AddOnTyBeginShutdown(PluginName, func);
 	}
 
 private:

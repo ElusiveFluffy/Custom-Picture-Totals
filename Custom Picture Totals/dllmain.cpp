@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "PictureFrames.h"
 #include "TygerFrameworkAPI.hpp"
+#include "TyMemoryValues.h"
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -32,16 +33,31 @@ EXTERN_C void TygerFrameworkPluginRequiredVersion(TygerFrameworkPluginVersion* v
 
 EXTERN_C bool TygerFrameworkPluginInitialize(TygerFrameworkPluginInitializeParam* param) {
 
-    if (!fs::exists("Plugins/Custom Picture IDs.txt"))
+    API::Initialize(param);
+
+    if (!fs::exists(API::GetPluginDirectory() / "Custom Picture IDs.txt"))
     {
+        API::LogPluginMessage("Custom Picture IDs txt file is missing", Error);
         param->initErrorMessage = "Custom Picture IDs txt file is missing";
         return false;
     }
 
-    API::Initialize(param);
+    API::AddOnTyBeginShutdown(PictureFrames::Shutdown);
+    API::AddOnTyInitialized(PictureFrames::SetPictureIDs);
 
+    TyMemoryValues::TyBaseAddress = (DWORD)param->TyHModule;
+    if (TyMemoryValues::TyBaseAddress)
+        API::LogPluginMessage("Got Ty Base Address");
+    else
+    {
+        API::LogPluginMessage("Failed to Get Ty Base Address", Error);
+        param->initErrorMessage = "Failed to Get Ty Base Address";
+        return false;
+    }
 
-    CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)PictureFrames::CheckIfGameFinishInit, NULL, 0, nullptr);
+    std::vector<TygerFrameworkImGuiParam> TygerFrameworkImguiElements = { {CollapsingHeader, "Assigned Totals Picture IDs"},
+                                                                          {Text, "Waiting for the Game to Initialize"} };
+    API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
 
     return true;
 }
