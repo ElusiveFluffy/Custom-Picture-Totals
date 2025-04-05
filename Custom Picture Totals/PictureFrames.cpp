@@ -21,7 +21,7 @@ void PictureFrames::Shutdown() {
 void PictureFrames::SetPictureIDs()
 {
     //Temporarily open it here to check the first line to see what method is used
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
     if (pictureIDs.is_open()) {
         std::string line;
         std::getline(pictureIDs, line);
@@ -35,9 +35,23 @@ void PictureFrames::SetPictureIDs()
     }
 }
 
+void SetGameInfoTotalCount(int count) {
+    API::LogPluginMessage("Setting Game Info Total Picture Frame Count");
+
+    DWORD oldProtection;
+    int* pictureFrameCount = (int*)(TyMemoryValues::TyBaseAddress + 0xE7733);
+    //Change the memory access to ReadWrite to be able to change the hardcoded value (usually its read only)
+    VirtualProtect(pictureFrameCount, 4, PAGE_EXECUTE_READWRITE, &oldProtection);
+
+    *pictureFrameCount = count;
+
+    //Set it back to the old access protection
+    VirtualProtect(pictureFrameCount, 4, oldProtection, &oldProtection);
+}
+
 void PictureFrames::SimplePictureLoading()
 {
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
     std::string level;
     std::string numOfPictures;
 
@@ -93,6 +107,8 @@ void PictureFrames::SimplePictureLoading()
         //Increment the pointer by 3 ints (C++ auto spaces it by 4 bytes)
         picturePointer = picturePointer + 3;
     }
+    //Set the full game totals picture count
+    SetGameInfoTotalCount(count);
     //Insert the total amount at the top, just after the collapsing header element
     TygerFrameworkImguiElements.insert(TygerFrameworkImguiElements.begin() + 1, { Text, "Total Picture Frames: " + std::to_string(count) });
     API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
@@ -101,7 +117,7 @@ void PictureFrames::SimplePictureLoading()
 
 void PictureFrames::AdvancedPictureLoading()
 {
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.txt");
+    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
     std::string level;
     std::string line;
     int countForLevel = 0;
@@ -165,6 +181,8 @@ void PictureFrames::AdvancedPictureLoading()
         //Increment the pointer by 3 ints (C++ auto spaces it by 4 bytes)
         picturePointer = picturePointer + 3;
     }
+    //Set the full game totals picture count
+    SetGameInfoTotalCount(count);
     //Insert the total amount at the top, just after the collapsing header element
     TygerFrameworkImguiElements.insert(TygerFrameworkImguiElements.begin() + 1, { Text, "Total Picture Frames: " + std::to_string(count) });
     API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);

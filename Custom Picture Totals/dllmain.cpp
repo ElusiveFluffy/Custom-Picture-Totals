@@ -35,7 +35,7 @@ EXTERN_C bool TygerFrameworkPluginInitialize(TygerFrameworkPluginInitializeParam
 
     API::Initialize(param);
 
-    if (!fs::exists(API::GetPluginDirectory() / "Custom Picture IDs.txt"))
+    if (!fs::exists(API::GetPluginDirectory() / "Custom Picture IDs.cfg"))
     {
         API::LogPluginMessage("Custom Picture IDs txt file is missing", Error);
         param->initErrorMessage = "Custom Picture IDs txt file is missing";
