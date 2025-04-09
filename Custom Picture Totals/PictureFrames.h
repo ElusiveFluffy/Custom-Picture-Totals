@@ -9,8 +9,8 @@ public:
 	static inline std::map<int*, std::vector<int>> OriginalPointers{};
 	static inline int PictureFrameIDs[512]{ 0 };
 	static void SetPictureIDs();
-	static void SimplePictureLoading();
-	static void AdvancedPictureLoading();
+	static void SimplePictureLoading(std::istream& pictureIDs);
+	static void AdvancedPictureLoading(std::istream& pictureIDs);
 	static void Shutdown();
 };
 

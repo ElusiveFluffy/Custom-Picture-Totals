@@ -20,19 +20,71 @@ void PictureFrames::Shutdown() {
 
 void PictureFrames::SetPictureIDs()
 {
-    //Temporarily open it here to check the first line to see what method is used
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
-    if (pictureIDs.is_open()) {
-        std::string line;
+    std::string line;
+
+    TyMemoryValues::FileExists = (TyMemoryValues::tyFileSys_Exists_t)(TyMemoryValues::TyBaseAddress + 0x1B8540);
+    char fileName[] = "Custom Picture IDs.cfg";
+    int fileSize;
+    //Check if it exists in a rkv or PC_External. Needs to be done now because usually in plugin initialize the game hasn't initialized the rkvs yet, so it'll always say the file doesn't exist
+    if (TyMemoryValues::FileExists(fileName, &fileSize)) {
+        //Allocate memory manually to avoid a error with loading from PC_External, if the PC_External Loader plugin isn't installed (the game does it some other way that causes a heap error)
+        TyMemoryValues::Heap_MemAlloc = (TyMemoryValues::Heap_MemAlloc_t)(TyMemoryValues::TyBaseAddress + 0x196840);
+        //It seems + 1 is required in some cases for some files for some reason
+        char* charPictureFile = TyMemoryValues::Heap_MemAlloc(fileSize + 1);
+        
+        TyMemoryValues::LoadFile = (TyMemoryValues::tyFileSys_Load_t)(TyMemoryValues::TyBaseAddress + 0x1B87C0);
+        TyMemoryValues::LoadFile(fileName, &fileSize, charPictureFile, fileSize + 1);
+        if (fileSize == 0)
+            return;
+
+        std::string pictureFile(charPictureFile);
+        //No longer needed, clear out the memory. Need to use the function from the game
+        TyMemoryValues::Heap_MemFree = (TyMemoryValues::Heap_MemFree_t)(TyMemoryValues::TyBaseAddress + 0x196860);
+        TyMemoryValues::Heap_MemFree(charPictureFile);
+
+        //This method reads \r which messes up the getline thing, as it doesn't remove it, so just remove it here
+        std::erase(pictureFile, '\r');
+        std::stringstream pictureIDs(pictureFile);
         std::getline(pictureIDs, line);
-        pictureIDs.close();
+
+        //Move back to the first line
+        pictureIDs.clear();
+        pictureIDs.seekg(0, std::ios::beg);
 
         //Chose the method to load the IDs
         if (line != "Z1:")
-            SimplePictureLoading();
+            SimplePictureLoading(pictureIDs);
         else
-            AdvancedPictureLoading();
+            AdvancedPictureLoading(pictureIDs);
     }
+    else {
+        std::ifstream pictureIDs(API::GetPluginDirectory() / fileName);
+        if (pictureIDs.is_open()) {
+            std::getline(pictureIDs, line);
+
+            //Move back to the first line
+            pictureIDs.clear();
+            pictureIDs.seekg(0, std::ios::beg);
+
+            //Chose the method to load the IDs
+            if (line != "Z1:")
+                SimplePictureLoading(pictureIDs);
+            else
+                AdvancedPictureLoading(pictureIDs);
+
+            pictureIDs.close();
+        }
+        else
+        {
+            API::LogPluginMessage("Custom Picture IDs cfg file is missing", Error);
+            std::vector<TygerFrameworkImGuiParam> TygerFrameworkImguiElements = { {CollapsingHeader, "Assigned Totals Picture IDs"}, {Text, "Custom Picture IDs cfg file is missing"} };
+            API::SetTygerFrameworkImGuiElements(TygerFrameworkImguiElements);
+            return;
+        }
+    }
+    
+    //Add the shutdown function only if the cfg file exists
+    API::AddOnTyBeginShutdown(PictureFrames::Shutdown);
 }
 
 void SetGameInfoTotalCount(int count) {
@@ -49,9 +101,8 @@ void SetGameInfoTotalCount(int count) {
     VirtualProtect(pictureFrameCount, 4, oldProtection, &oldProtection);
 }
 
-void PictureFrames::SimplePictureLoading()
+void PictureFrames::SimplePictureLoading(std::istream &pictureIDs)
 {
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
     std::string level;
     std::string numOfPictures;
 
@@ -115,9 +166,8 @@ void PictureFrames::SimplePictureLoading()
     API::LogPluginMessage("Total Picture Frames: " + std::to_string(count));
 }
 
-void PictureFrames::AdvancedPictureLoading()
+void PictureFrames::AdvancedPictureLoading(std::istream& pictureIDs)
 {
-    std::ifstream pictureIDs(API::GetPluginDirectory() / "Custom Picture IDs.cfg");
     std::string level;
     std::string line;
     int countForLevel = 0;

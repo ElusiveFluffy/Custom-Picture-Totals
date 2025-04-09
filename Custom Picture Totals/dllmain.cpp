@@ -3,8 +3,6 @@
 #include "PictureFrames.h"
 #include "TygerFrameworkAPI.hpp"
 #include "TyMemoryValues.h"
-#include <filesystem>
-namespace fs = std::filesystem;
 
 BOOL APIENTRY DllMain(HMODULE hModule,
     DWORD  ul_reason_for_call,
@@ -35,16 +33,6 @@ EXTERN_C bool TygerFrameworkPluginInitialize(TygerFrameworkPluginInitializeParam
 
     API::Initialize(param);
 
-    if (!fs::exists(API::GetPluginDirectory() / "Custom Picture IDs.cfg"))
-    {
-        API::LogPluginMessage("Custom Picture IDs txt file is missing", Error);
-        param->initErrorMessage = "Custom Picture IDs txt file is missing";
-        return false;
-    }
-
-    API::AddOnTyBeginShutdown(PictureFrames::Shutdown);
-    API::AddOnTyInitialized(PictureFrames::SetPictureIDs);
-
     TyMemoryValues::TyBaseAddress = (DWORD)param->TyHModule;
     if (TyMemoryValues::TyBaseAddress)
         API::LogPluginMessage("Got Ty Base Address");
@@ -54,6 +42,21 @@ EXTERN_C bool TygerFrameworkPluginInitialize(TygerFrameworkPluginInitializeParam
         param->initErrorMessage = "Failed to Get Ty Base Address";
         return false;
     }
+
+    //if (!fs::exists(API::GetPluginDirectory() / "Custom Picture IDs.cfg"))
+    //{
+    //    TyMemoryValues::FileExists = (TyMemoryValues::tyFileSys_Exists_t)(TyMemoryValues::TyBaseAddress + 0x1B8540);
+    //    char fileName[] = "Custom Picture IDs.cfg";
+    //    if (!TyMemoryValues::FileExists(fileName, nullptr))
+    //    {
+    //        API::LogPluginMessage("Custom Picture IDs cfg file is missing", Error);
+    //        param->initErrorMessage = "Custom Picture IDs cfg file is missing";
+    //        return false;
+    //    }
+    //    else
+    //        TyMemoryValues::LoadFile = (TyMemoryValues::tyFileSys_Load_t)(TyMemoryValues::TyBaseAddress + 0x1B87C0);
+    //}
+    API::AddOnTyInitialized(PictureFrames::SetPictureIDs);
 
     std::vector<TygerFrameworkImGuiParam> TygerFrameworkImguiElements = { {CollapsingHeader, "Assigned Totals Picture IDs"},
                                                                           {Text, "Waiting for the Game to Initialize"} };
