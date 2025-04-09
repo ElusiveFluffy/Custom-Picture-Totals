@@ -26,16 +26,15 @@ void PictureFrames::SetPictureIDs()
     char fileName[] = "Custom Picture IDs.cfg";
     int fileSize;
     //Check if it exists in a rkv or PC_External. Needs to be done now because usually in plugin initialize the game hasn't initialized the rkvs yet, so it'll always say the file doesn't exist
-    if (TyMemoryValues::FileExists(fileName, &fileSize)) {
+    if (TyMemoryValues::FileExists(fileName, &fileSize) && fileSize != 0) {
         //Allocate memory manually to avoid a error with loading from PC_External, if the PC_External Loader plugin isn't installed (the game does it some other way that causes a heap error)
         TyMemoryValues::Heap_MemAlloc = (TyMemoryValues::Heap_MemAlloc_t)(TyMemoryValues::TyBaseAddress + 0x196840);
-        //It seems + 1 is required in some cases for some files for some reason
+        //+ 1 for the null terminator
         char* charPictureFile = TyMemoryValues::Heap_MemAlloc(fileSize + 1);
+        charPictureFile[fileSize] = NULL;
         
         TyMemoryValues::LoadFile = (TyMemoryValues::tyFileSys_Load_t)(TyMemoryValues::TyBaseAddress + 0x1B87C0);
         TyMemoryValues::LoadFile(fileName, &fileSize, charPictureFile, fileSize + 1);
-        if (fileSize == 0)
-            return;
 
         std::string pictureFile(charPictureFile);
         //No longer needed, clear out the memory. Need to use the function from the game
